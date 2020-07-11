@@ -17,34 +17,14 @@ var EncodeOptions = map[string]map[int]int{
 var ops = lilliput.NewImageOps(8192)
 
 func conv(inputFilename string, outputWidth int, outputHeight int, outputExtension string) ([]byte, bool) {
-
-	if inputFilename == "" {
-		fmt.Printf("No input filename provided, quitting.")
-	}
-
-	// decoder wants []byte, so read the whole file into a buffer
 	inputBuf := doRequest("https://s3.nl-ams.scw.cloud/cdn.xdb.be/img/" + inputFilename)
-	// needs error handling
 	decoder, err := lilliput.NewDecoder(inputBuf)
-	// this error reflects very basic checks,
-	// mostly just for the magic bytes of the file to match known image formats
 	if err != nil {
-		fmt.Printf("error decoding image, \n%s", err)
 		return inputBuf, false
 	}
 	defer decoder.Close()
 
 	header, err := decoder.Header()
-	// this error is much more comprehensive and reflects
-	// format errors
-	if err != nil {
-		fmt.Printf("error reading image header, %s", err)
-	}
-
-	// print some basic info about the image
-	fmt.Printf("file type: %s\n", decoder.Description())
-	fmt.Printf("%dpx x %dpx\n", header.Width(), header.Height())
-
 	// create a buffer to store the output image, 50MB in this case
 	outputImg := make([]byte, 50*1024*1024)
 
@@ -82,7 +62,6 @@ func conv(inputFilename string, outputWidth int, outputHeight int, outputExtensi
 	outputImg, err = ops.Transform(decoder, opts, outputImg)
 	if err != nil {
 		fmt.Printf("error transforming image, %s\n", err)
-		return []byte("An Error occured, please email me at scrash@tuta.io"), false
 	}
 
 	return outputImg, true
