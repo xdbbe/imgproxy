@@ -36,7 +36,7 @@ jobs:
     - name: S3 Sync
       uses: jakejarvis/s3-sync-action@v0.5.1
       with:
-        args: --acl public-read --follow-symlinks -exclude '*' --include 'imgproxy'
+        args: --acl public-read --follow-symlinks --exclude '*' --include 'imgproxy'
       env:
         AWS_S3_ENDPOINT: 'https://s3.nl-ams.scw.cloud'
         AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
