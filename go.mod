@@ -6,3 +6,5 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/valyala/fasthttp v1.15.1
 )
+
+go 1.13
