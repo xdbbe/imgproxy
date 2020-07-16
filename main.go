@@ -8,7 +8,10 @@ import (
 
 	"github.com/gofiber/fiber"
 	"github.com/gofiber/fiber/middleware"
+	"github.com/patrickmn/go-cache"
 )
+
+var ca = cache.New(5*time.Minute, 10*time.Minute)
 
 func main() {
 	//Memory Profiler, disable in prod
@@ -42,18 +45,26 @@ func main() {
 	app.Use(middleware.Logger(w))
 	//Main Logic
 	app.Get("/img/:hash.:extension", func(c *fiber.Ctx) {
-		hash := c.Params("hash")
 		extension := c.Params("extension")
-		width, _ := strconv.Atoi(c.FormValue("width"))
-		height, _ := strconv.Atoi(c.FormValue("height"))
-		resp, success := conv(hash, width, height, hash+"."+extension)
-		c.Send(resp)
-		if success == true {
+		if x, found := ca.Get(c.OriginalURL()); found {
+			resp := x.([]byte)
 			c.Set("content-type", "image/"+extension)
+			c.Send(resp)
+			c.Set("X-Powered-By", "xdb-imgproxy")
 		} else {
-			c.Set("content-type", "application/xml")
+			hash := c.Params("hash")
+			width, _ := strconv.Atoi(c.FormValue("width"))
+			height, _ := strconv.Atoi(c.FormValue("height"))
+			resp, success := conv(hash, width, height, hash+"."+extension)
+			if success == true {
+				c.Set("content-type", "image/"+extension)
+				ca.Set(c.OriginalURL(), resp, cache.DefaultExpiration)
+			} else {
+				c.Set("content-type", "application/xml")
+			}
+			c.Send(resp)
+			c.Set("X-Powered-By", "xdb-imgproxy")
 		}
-		c.Set("X-Powered-By", "xdb-imgproxy")
 	})
 
 	app.Get("*", func(c *fiber.Ctx) {

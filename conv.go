@@ -20,7 +20,7 @@ var m sync.Mutex
 
 func conv(inputFilename string, outputWidth int, outputHeight int, outputExtension string) ([]byte, bool) {
 	defer ops.Clear()
-	inputBuf := doRequest("https://s3.nl-ams.scw.cloud/cdn.xdb.be/img/" + inputFilename)
+	inputBuf := doRequest("https://cdn.xdb.be/img/" + inputFilename)
 	decoder, err := lilliput.NewDecoder(inputBuf)
 	if err != nil {
 		return inputBuf, false
