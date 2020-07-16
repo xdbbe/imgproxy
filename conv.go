@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/discordapp/lilliput"
 	"github.com/valyala/fasthttp"
@@ -15,8 +16,10 @@ var EncodeOptions = map[string]map[int]int{
 }
 
 var ops = lilliput.NewImageOps(8192)
+var m sync.Mutex
 
 func conv(inputFilename string, outputWidth int, outputHeight int, outputExtension string) ([]byte, bool) {
+	defer ops.Clear()
 	inputBuf := doRequest("https://s3.nl-ams.scw.cloud/cdn.xdb.be/img/" + inputFilename)
 	decoder, err := lilliput.NewDecoder(inputBuf)
 	if err != nil {
@@ -59,11 +62,12 @@ func conv(inputFilename string, outputWidth int, outputHeight int, outputExtensi
 	}
 
 	// resize and transcode image
+	m.Lock()
 	outputImg, err = ops.Transform(decoder, opts, outputImg)
 	if err != nil {
 		fmt.Printf("error transforming image, %s\n", err)
 	}
-
+	m.Unlock()
 	return outputImg, true
 }
 

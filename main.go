@@ -12,10 +12,10 @@ import (
 
 func main() {
 	//Memory Profiler, disable in prod
-	defer profile.Start(profile.MemProfile).Stop()
+	//defer profile.Start(profile.MemProfile).Stop()
 
 	app := fiber.New(&fiber.Settings{
-		//enable if there is enough ram (min 32-64 gig) will stop SIGSEGVs that come from using a single op and going to fast
+		//enable if there is enough ram (min 32-64 gig)
 		//Prefork:          true,
 		DisableKeepalive: true,
 	})
