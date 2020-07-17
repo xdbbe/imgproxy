@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"os"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber"
@@ -30,7 +30,6 @@ func main() {
 	// }
 	// config := &tls.Config{Certificates: []tls.Certificate{cer}}
 
-	//Recover, idk if this actually does anything
 	app.Use(middleware.Recover())
 	//Logger
 	f, _ := os.Create("imgproxy.log")
@@ -45,24 +44,22 @@ func main() {
 	app.Use(middleware.Logger(w))
 	//Main Logic
 	app.Get("/img/:hash.:extension", func(c *fiber.Ctx) {
-		extension := c.Params("extension")
-		if x, found := ca.Get(c.OriginalURL()); found {
-			resp := x.([]byte)
-			c.Set("content-type", "image/"+extension)
-			c.Send(resp)
-			c.Set("X-Powered-By", "xdb-imgproxy")
-		} else {
+
+		if !checkCachePost(c) {
+			extension := c.Params("extension")
 			hash := c.Params("hash")
-			width, _ := strconv.Atoi(c.FormValue("width"))
-			height, _ := strconv.Atoi(c.FormValue("height"))
-			resp, success := conv(hash, width, height, hash+"."+extension)
+
+			resp, success := conv(hash, hash+"."+extension, c)
+
 			if success == true {
 				c.Set("content-type", "image/"+extension)
-				ca.Set(c.OriginalURL(), resp, cache.DefaultExpiration)
+				ca.Set(strings.Join([]string{hash, extension, c.FormValue("width"), c.FormValue("height")}, ";"), resp, cache.DefaultExpiration)
 			} else {
 				c.Set("content-type", "application/xml")
 			}
-			c.Send(resp)
+			if resp != nil {
+				c.Send(resp)
+			}
 			c.Set("X-Powered-By", "xdb-imgproxy")
 		}
 	})

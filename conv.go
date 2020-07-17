@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/discordapp/lilliput"
+	"github.com/gofiber/fiber"
+	"github.com/patrickmn/go-cache"
 	"github.com/valyala/fasthttp"
 )
 
@@ -18,7 +21,7 @@ var EncodeOptions = map[string]map[int]int{
 var ops = lilliput.NewImageOps(8192)
 var m sync.Mutex
 
-func conv(inputFilename string, outputWidth int, outputHeight int, outputExtension string) ([]byte, bool) {
+func conv(inputFilename string, outputExtension string, c *fiber.Ctx) ([]byte, bool) {
 	defer ops.Clear()
 	inputBuf := doRequest("https://cdn.xdb.be/img/" + inputFilename)
 	decoder, err := lilliput.NewDecoder(inputBuf)
@@ -26,6 +29,8 @@ func conv(inputFilename string, outputWidth int, outputHeight int, outputExtensi
 		return inputBuf, false
 	}
 	defer decoder.Close()
+	outputWidth, _ := strconv.Atoi(c.FormValue("width"))
+	outputHeight, _ := strconv.Atoi(c.FormValue("height"))
 
 	header, err := decoder.Header()
 	// create a buffer to store the output image, 50MB in this case
@@ -63,15 +68,20 @@ func conv(inputFilename string, outputWidth int, outputHeight int, outputExtensi
 
 	// resize and transcode image
 	m.Lock()
-	outputImg, err = ops.Transform(decoder, opts, outputImg)
-	if err != nil {
-		fmt.Printf("error transforming image, %s\n", err)
+	if !checkCachePost(c) {
+		outputImg, err = ops.Transform(decoder, opts, outputImg)
+		if err != nil {
+			fmt.Printf("error transforming image, %s\n", err)
+		}
 	}
 	m.Unlock()
 	return outputImg, true
 }
 
 func doRequest(url string) []byte {
+	if x, found := ca.Get(url); found {
+		return x.([]byte)
+	}
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseRequest(req)
@@ -80,6 +90,20 @@ func doRequest(url string) []byte {
 	req.SetRequestURI(url)
 
 	fasthttp.Do(req, resp)
-
+	ca.Set(url, resp.Body(), cache.DefaultExpiration)
 	return resp.Body()
+}
+
+func checkCachePost(c *fiber.Ctx) bool {
+	extension := c.Params("extension")
+	hash := c.Params("hash")
+
+	if x, found := ca.Get(strings.Join([]string{hash, extension, c.FormValue("width"), c.FormValue("height")}, ";")); found {
+		resp := x.([]byte)
+		c.Set("content-type", "image/"+extension)
+		c.Send(resp)
+		c.Set("X-Powered-By", "xdb-imgproxy")
+		return true
+	}
+	return false
 }
