@@ -49,7 +49,7 @@ func main() {
 			extension := c.Params("extension")
 			hash := c.Params("hash")
 
-			resp, success := conv(hash, hash+"."+extension, c)
+			resp, success := conv(hash, extension, c)
 
 			if success == true {
 				c.Set("content-type", "image/"+extension)
