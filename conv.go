@@ -43,7 +43,9 @@ func conv(inputFilename string, outputExtDesired string, c *fiber.Ctx) ([]byte, 
 		outputImg, err := bimg.NewImage(inputImg).Process(opts)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
+			return inputImg, false
 		}
+		c.Set("content-type", "image/"+bimg.DetermineImageTypeName(outputImg))
 		return outputImg, true
 	}
 	return inputImg, false

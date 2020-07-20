@@ -52,7 +52,6 @@ func main() {
 			resp, success := conv(hash, extension, c)
 
 			if success == true {
-				c.Set("content-type", "image/"+extension)
 				ca.Set(strings.Join([]string{hash, extension, c.FormValue("width"), c.FormValue("height")}, ";"), resp, cache.DefaultExpiration)
 			} else {
 				c.Set("content-type", "application/xml")
