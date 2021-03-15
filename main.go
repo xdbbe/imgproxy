@@ -18,17 +18,8 @@ func main() {
 	//defer profile.Start(profile.MemProfile).Stop()
 
 	app := fiber.New(fiber.Config{
-		//enable if there is enough ram (min 32-64 gig)
-		//Prefork:          true,
 		DisableKeepalive: true,
 	})
-
-	//SSL, enable if standalone with own ip
-	// cer, err := tls.LoadX509KeyPair("server.crt", "server.key")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// config := &tls.Config{Certificates: []tls.Certificate{cer}}
 
 	app.Use(recover.New())
 	//Logger
@@ -41,22 +32,22 @@ func main() {
 	}))
 	//Main Logic
 	app.Get("/img/:hash.:extension", func(c *fiber.Ctx) error {
+		extension := c.Params("extension")
+		hash := c.Params("hash")
 
-		if !checkCachePost(c) {
-			extension := c.Params("extension")
-			hash := c.Params("hash")
-
+		if x, found := ca.Get(strings.Join([]string{hash, extension, c.FormValue("width"), c.FormValue("height")}, ";")); found {
+			resp := x.([]byte)
+			c.Set("content-type", "image/"+extension)
+			return c.Send(resp)
+			c.Set("X-Powered-By", "xdb-imgproxy")
+		}else{
 			resp, success := conv(hash, extension, c)
-
 			if success == true {
 				ca.Set(strings.Join([]string{hash, extension, c.FormValue("width"), c.FormValue("height")}, ";"), resp, cache.DefaultExpiration)
-			} else {
-				c.Set("content-type", "application/xml")
 			}
 			if resp != nil {
 				return c.Send(resp)
 			}
-			c.Set("X-Powered-By", "xdb-imgproxy")
 		}
 		return fiber.NewError(500)
 	})
