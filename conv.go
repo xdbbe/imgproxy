@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 	"github.com/h2non/bimg"
 	"github.com/patrickmn/go-cache"
 	"github.com/valyala/fasthttp"
