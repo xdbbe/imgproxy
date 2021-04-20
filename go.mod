@@ -1,7 +1,7 @@
 module github.com/xdbbe/imgproxy
 
 require (
-	github.com/gofiber/fiber/v2 v2.7.1
+	github.com/gofiber/fiber/v2 v2.8.0
 	github.com/h2non/bimg v1.1.5
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/valyala/fasthttp v1.23.0
